@@ -49,10 +49,13 @@ def main():
                 break
 
             elif action == "complete":
-                # Task complete
+                # Task complete, but the app continues running
                 message = ai_response.get("message", "Task complete.")
-                print(f"\n{message}")
-                return
+                print(f"\n{message}\nYou can enter a new task to continue.")
+
+                # Update the task state to reflect the completion
+                task_state["context"] += f"\nTask complete: {message}\n"
+                break  # Exit the inner loop to allow the user to input a new task
 
             else:
                 print("\nUnexpected response from the AI. Please try again.")
