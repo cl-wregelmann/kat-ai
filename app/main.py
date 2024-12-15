@@ -1,5 +1,5 @@
 from app.ai import query_openai, add_message
-from app.docker import exec
+from app.docker import exec, put_file
 
 def main():
     print("Welcome to the Agentic AI App")
@@ -24,16 +24,14 @@ def main():
                     output = exec(command)
                     print(f"\n{output}")
                     add_message('system', f"{dir}# {command}\n{output}")
-                    ai_response = query_openai("What should we do next?")
+                    ai_response = query_openai("Please continue")
                     continue
 
             elif action == "put_file":
                 path = ai_response.get('path')
                 content = ai_response.get('content')
                 if path and content:
-                    with open(path, 'w') as f:
-                        f.write(content)
-                        print(f"\nUpdated {path}")
+                    put_file(path, content)
                     add_message('system', f"Updated {path}:\n\n{content}")
                     ai_response = query_openai("What should we do next?")
                     continue

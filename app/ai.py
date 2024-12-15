@@ -13,13 +13,17 @@ client = OpenAI(
 )
 
 messages: List = [
-    {role: system, content: SYSTEM_MESSAGE.strip()}
+    {"role": "system", "content": SYSTEM_MESSAGE.strip()}
 ]
 
-def query_openai(prompt: str, context: str = 
+def query_openai(prompt: str):
+        
+    try:
+
         logger.info(f'Querying OpenAI with prompt: {prompt}')
 
-            messages=messages,
+        response = client.chat.completions.create(
+            messages=messages+[{"role": "user", "content": prompt}],
             model=MODEL_NAME,
             response_format={type: json_object}
         )
@@ -29,8 +33,11 @@ def query_openai(prompt: str, context: str =
         try:
             return json.loads(ai_response)
         except json.JSONDecodeError:
-            return {action: inquiry, query: ai_response}
+            return {"action": "inquiry", "query": ai_response}
 
     except Exception as e:
         logger.error(f'Error communicating with OpenAI API: {str(e)}')
-        return {action: error, message: fError
+        return {"action": "inquiry", "query": str(e)}
+
+def add_message(role: str, content: str) -> None:
+    messages.append({"role": role, "content": content})
