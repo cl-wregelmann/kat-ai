@@ -25,7 +25,7 @@ def query_openai(prompt: str):
         response = client.chat.completions.create(
             messages=messages+[{"role": "user", "content": prompt}],
             model=MODEL_NAME,
-            response_format={type: json_object}
+            response_format={"type": "json_object"}
         )
 
         ai_response = response.choices[0].message.content.strip()
