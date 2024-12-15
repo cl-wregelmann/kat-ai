@@ -35,10 +35,12 @@ def put_file(path: str, content: str):
     try:
 
         tmp = tempfile.NamedTemporaryFile()
-        tmp.write(content)
+        tmp.write(content.encode('utf-8'))
+        tmp.flush()
+        tmp.seek(0)
         
         process = subprocess.Popen(
-            shlex.split(f"docker cp -q {tmp.name} {CONTAINER_NAME}:{path}"),
+            shlex.split(f"docker cp {tmp.name} {CONTAINER_NAME}:{path}"),
             stdout=subprocess.PIPE,
             stderr=subprocess.PIPE,
             text=True
@@ -47,6 +49,8 @@ def put_file(path: str, content: str):
         while True:
             if process.poll() is not None:
                 break
+
+        tmp.close()
 
         stderr = process.stderr.read()
         if process.returncode != 0:

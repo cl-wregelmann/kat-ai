@@ -47,7 +47,7 @@ def main():
             elif action == "complete":
                 # Task complete, but the app continues running
                 message = ai_response.get("message", "Task complete.")
-                add_message('assistant', query)
+                add_message('assistant', message)
                 print(f"\n{message}")
                 break  # Exit the inner loop to allow the user to input a new task
 

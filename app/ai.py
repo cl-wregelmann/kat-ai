@@ -5,7 +5,13 @@ from config.settings import OPENAI_API_KEY, SYSTEM_MESSAGE, MODEL_NAME
 from typing import List
 
 # Configure logging
-logging.basicConfig(level=logging.INFO)
+logging.basicConfig(
+    level=logging.INFO,
+    filename="ai.log",
+    filemode='a',
+    format='%(asctime)s - %(levelname)s - %(message)s'
+)
+
 logger = logging.getLogger(__name__)
 
 client = OpenAI(
@@ -20,7 +26,7 @@ def query_openai(prompt: str):
         
     try:
 
-        logger.info(f'Querying OpenAI with prompt: {prompt}')
+        logger.info(f"Prompt:\n{prompt}")
 
         response = client.chat.completions.create(
             messages=messages+[{"role": "user", "content": prompt}],
@@ -29,6 +35,8 @@ def query_openai(prompt: str):
         )
 
         ai_response = response.choices[0].message.content.strip()
+
+        logger.info(f"AI Response:\n{ai_response}")
 
         try:
             return json.loads(ai_response)
