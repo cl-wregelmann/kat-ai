@@ -1,45 +1,40 @@
-import shlex
-import subprocess
+import os
+import json
+from openai import OpenAI
+from config.settings import OPENAI_API_KEY, SYSTEM_MESSAGE, MODEL_NAME
+from app.state import add_context
 
-def execute_docker_command_safe(command: str) -> str:
+# Create a client instance
+client = OpenAI(
+    api_key=OPENAI_API_KEY  # Uses the key from settings or environment
+)
+
+def query_openai(prompt: str, context: str = '') -> dict:
     try:
-        parsed_command = shlex.split(command)
-        process = subprocess.Popen(
-            parsed_command,
-            stdout=subprocess.PIPE,
-            stderr=subprocess.PIPE,
-            text=True
+        # Ensure the system message is included in the context
+        full_context = SYSTEM_MESSAGE
+        if context.strip():
+            full_context += f'\n{context.strip()}'
+
+        # Prepare the messages
+        messages = [
+            {'role': 'system', 'content': full_context.strip()},
+            {'role': 'user', 'content': prompt.strip()}
+        ]
+
+        # Call the chat completion endpoint
+        response = client.chat.completions.create(
+            messages=messages,
+            model=MODEL_NAME
         )
 
-        output_lines = []
-        print("Executing Docker command:")
-        while True:
-            line = process.stdout.readline()
-            if line:
-                print(line, end="")
-                output_lines.append(line)
-            elif process.poll() is not None:
-                break
+        # Extract and parse the assistant's response
+        ai_response = response.choices[0].message.content.strip()
+        try:
+            return json.loads(ai_response)
+        except json.JSONDecodeError:
+            return {'action': 'inquiry', 'query': 'I couldn't understand the task. Could you clarify?'}
 
-        stderr = process.stderr.read()
-        if process.returncode != 0:
-            return f"Error: {stderr.strip()}"
-
-        return ''.join(output_lines).strip()
     except Exception as e:
-        return f"Exception occurred: {str(e)}"
-
-def list_containers(all_containers: bool = False) -> str:
-    command = "docker ps"
-    if all_containers:
-        command += " -a"
-    return execute_docker_command_safe(command)
-
-def start_container(container_name: str) -> str:
-    return execute_docker_command_safe(f"docker start {container_name}")
-
-def stop_container(container_name: str) -> str:
-    return execute_docker_command_safe(f"docker stop {container_name}")
-
-def remove_container(container_name: str) -> str:
-    return execute_docker_command_safe(f"docker rm {container_name}")
+        # Handle unexpected errors
+        return {'action': 'error', 'message': f'Error communicating with OpenAI API: {str(e)}'}
