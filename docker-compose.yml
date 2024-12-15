@@ -6,6 +6,8 @@ services:
     tty: true               # Keeps the container running with a terminal
     stdin_open: true        # Allows interactive commands
     volumes:
-      - ./workspace:/workspace  # Mount a local directory into the container
+      - workspace:/workspace  # Mount a local directory into the container
     working_dir: /workspace     # Set the default working directory
     command: ["bash"]           # Start with a bash shell
+volumes:
+  workspace:
