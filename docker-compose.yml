@@ -1,13 +1,7 @@
 version: "3.9"
 services:
   kat_container:
-    image: debian:bullseye  # Use the Debian base image
-    container_name: kat     # Match the name in your `settings.py`
-    tty: true               # Keeps the container running with a terminal
-    stdin_open: true        # Allows interactive commands
-    volumes:
-      - workspace:/workspace  # Mount a local directory into the container
-    working_dir: /workspace     # Set the default working directory
-    command: ["bash"]           # Start with a bash shell
-volumes:
-  workspace:
+    image: debian:bullseye
+    container_name: kat
+    tty: true
+    stdin_open: true
