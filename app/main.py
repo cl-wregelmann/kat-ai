@@ -3,6 +3,7 @@ import logging
 import os
 import json
 import time
+import shlex
 from openai import OpenAI
 from app.assistant import assistant, client
 from app.tools.execute import Handler as ExecuteHandler
@@ -59,8 +60,9 @@ def handle_tool_calls(run_data):
 
         # Dispatch to the correct handler based on tool_name
         if tool_name == "execute":
+            command = arguments.get("command", "").strip()
             try:
-                handler = ExecuteHandler(arguments)
+                handler = ExecuteHandler({"command": command})
                 result = handler.run()
                 logger.debug("Executed tool '%s' with result: %s", tool_name, result)
                 tool_outputs.append({
@@ -100,7 +102,13 @@ def main():
         sys.exit(1)
 
     while True:
-        user_input = input("You: ")
+        try:
+            user_input = input("# ")
+        except KeyboardInterrupt:
+            print("\nGoodbye!")
+            logger.info("Session ended by user.")
+            break
+
         if user_input.strip().lower() in ["exit", "quit"]:
             print("Goodbye!")
             logger.info("Session ended by user.")
@@ -114,6 +122,10 @@ def main():
                 content=user_input
             )
             logger.info("Added user message: %s", user_input)
+        except openai.BadRequestError as e:
+            logger.error("Failed to add user message: %s", e)
+            print(f"Failed to add your message: {e['error']['message']}. Please try again.")
+            continue
         except Exception as e:
             logger.exception("Failed to add user message: %s", e)
             print("Failed to add your message. Please check the logs.")
@@ -126,6 +138,10 @@ def main():
                 assistant_id=assistant.id
             )
             logger.info("Created run with ID: %s, status: %s", run.id, run.status)
+        except openai.BadRequestError as e:
+            logger.error("Failed to create run: %s", e)
+            print(f"Failed to process your message: {e['error']['message']}. Please try again.")
+            continue
         except Exception as e:
             logger.exception("Failed to create run: %s", e)
             print("Failed to process your message. Please check the logs.")
@@ -148,6 +164,10 @@ def main():
                             tool_outputs=tool_outputs
                         )
                         logger.info("Submitted tool outputs for run '%s', new status: %s", run.id, run.status)
+                    except openai.BadRequestError as e:
+                        logger.error("Failed to submit tool outputs for run '%s': %s", run.id, e)
+                        print(f"Failed to submit tool outputs: {e['error']['message']}. Please try again.")
+                        break
                     except Exception as e:
                         logger.exception("Failed to submit tool outputs for run '%s': %s", run.id, e)
                         print("Failed to submit tool outputs. Please check the logs.")
@@ -162,6 +182,10 @@ def main():
                 try:
                     run = client.beta.threads.runs.retrieve(thread_id=thread.id, run_id=run.id)
                     logger.info("Refetched run '%s' status: %s", run.id, run.status)
+                except openai.BadRequestError as e:
+                    logger.error("Failed to retrieve run '%s': %s", run.id, e)
+                    print(f"Failed to retrieve run status: {e['error']['message']}. Please try again.")
+                    break
                 except Exception as e:
                     logger.exception("Failed to retrieve run '%s': %s", run.id, e)
                     print("Failed to retrieve run status. Please check the logs.")
@@ -188,8 +212,6 @@ def main():
             print("An error occurred. Please try again.")
             logger.error("Run '%s' ended with status: %s after %d retries", run.id, run.status, retries)
             logger.debug("Run details: %s", run)
-            # Optionally, provide more detailed run information
-            # logger.debug("Run data: %s", run.to_dict())
 
 if __name__ == "__main__":
     main()
