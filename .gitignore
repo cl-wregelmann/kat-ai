@@ -6,3 +6,5 @@ config/__pycache__/
 runtime/
 
 .idea/
+
+*.pyc
